@@ -1,0 +1,5 @@
+#ifndef __NGX_AWS_AUTH_AWS_FUNCTIONS__
+#define __NGX_AWS_AUTH_AWS_FUNCTIONS__
+
+
+#endif
