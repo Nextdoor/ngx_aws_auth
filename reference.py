@@ -4,6 +4,10 @@ from hashlib import sha1
 import hmac
 import sys
 
+try:
+    from urllib.request import Request, urlopen  # Python 3
+except:
+    from urllib2 import Request, urlopen  # Python 2
 
 '''
 Authorization = "AWS" + " " + AWSAccessKeyId + ":" + Signature;
@@ -43,7 +47,7 @@ def str_to_sign(method, vhost_mode, bucket, url):
     headers = {}
     headers['Date'] = dt
     if vhost_mode:
-        headers['Host'] = bucket
+        headers['Host'] = "%s.s3.amazonaws.com" % bucket
     return {'s2s': retval, 'headers': headers }
 
 
@@ -60,8 +64,22 @@ def az_h(ak, key, method, vhost_mode, bucket, url):
     return sig['headers']
 
 
+def get_data(ak, key, method, vhost_mode, bucket, url):
+    if vhost_mode:
+        url = "http://%s.s3.amazonaws.com%s" % (bucket, url)
+    else:
+        url = "http://s3.amazonaws.com%s" % (url)
+    q = Request(url)
+    headers = az_h(ak, key, method, vhost_mode, bucket, url)
+    print url
+    print headers
+    for k,v in headers.iteritems():
+        q.add_header(k, v)
+    return urlopen(q).read()
+
+
 if __name__ == "__main__":
     ak = sys.argv[1]
     k = sys.argv[2]
-    print az_h(ak, k, "GET", True, "hw.anomalizer", "/lock.txt")
-    print az_h(ak, k, "GET", False, "hw.anomalizer", "/hw.anomalizer/nq.c")
+    print get_data(ak, k, "GET", True, "hw.anomalizer", "/lock.txt")
+    print get_data(ak, k, "GET", False, "hw.anomalizer", "/hw.anomalizer/nq.c")
