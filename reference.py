@@ -53,6 +53,7 @@ def str_to_sign(method, vhost_mode, bucket, url):
 
 def sign(key, method, vhost_mode, bucket, url):
     raw = str_to_sign(method, vhost_mode, bucket, url)
+    print "String to sign is\n----------------------\n%s\n---------------------\n" % raw['s2s']
     retval = hmac.new(key, raw['s2s'], sha1)   
     return {'sign': retval.digest().encode("base64").rstrip("\n"),
         'headers': raw['headers']}
@@ -66,11 +67,12 @@ def az_h(ak, key, method, vhost_mode, bucket, url):
 
 def get_data(ak, key, method, vhost_mode, bucket, url):
     if vhost_mode:
-        url = "http://%s.s3.amazonaws.com%s" % (bucket, url)
+        rurl = "http://%s.s3.amazonaws.com%s" % (bucket, url)
     else:
-        url = "http://s3.amazonaws.com%s" % (url)
-    q = Request(url)
+        rurl = "http://s3.amazonaws.com%s" % (url)
+    q = Request(rurl)
     headers = az_h(ak, key, method, vhost_mode, bucket, url)
+    print 'About to make a request'
     print url
     print headers
     for k,v in headers.iteritems():
