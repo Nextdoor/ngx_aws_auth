@@ -36,7 +36,7 @@ def canon_resource(vhost_mode, bucket, url):
     return val
 
 
-def str_to_sign(method, vhost_mode, bucket, url):
+def str_to_sign_v2(method, vhost_mode, bucket, url):
     cr = canon_resource(vhost_mode, bucket, url)
     ctype = ""
     cmd5 = ""
@@ -51,15 +51,15 @@ def str_to_sign(method, vhost_mode, bucket, url):
     return {'s2s': retval, 'headers': headers }
 
 
-def sign(key, method, vhost_mode, bucket, url):
-    raw = str_to_sign(method, vhost_mode, bucket, url)
+def v2sign(key, method, vhost_mode, bucket, url):
+    raw = str_to_sign_v2(method, vhost_mode, bucket, url)
     print "String to sign is\n----------------------\n%s\n---------------------\n" % raw['s2s']
     retval = hmac.new(key, raw['s2s'], sha1)   
     return {'sign': retval.digest().encode("base64").rstrip("\n"),
         'headers': raw['headers']}
 
 def az_h(ak, key, method, vhost_mode, bucket, url):
-    sig = sign(key, method, vhost_mode, bucket, url)
+    sig = v2sign(key, method, vhost_mode, bucket, url)
     ahv = "AWS %s:%s" % (ak, sig['sign'])
     sig['headers']['Authorization'] = ahv
     return sig['headers']
