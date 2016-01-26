@@ -5,9 +5,9 @@ import hmac
 import sys
 
 try:
-    from urllib.request import Request, urlopen  # Python 3
+    from urllib.request import Request, urlopen, HTTPError  # Python 3
 except:
-    from urllib2 import Request, urlopen  # Python 2
+    from urllib2 import Request, urlopen, HTTPError  # Python 2
 
 '''
 Authorization = "AWS" + " " + AWSAccessKeyId + ":" + Signature;
@@ -40,7 +40,7 @@ def str_to_sign(method, vhost_mode, bucket, url):
     cr = canon_resource(vhost_mode, bucket, url)
     ctype = ""
     cmd5 = ""
-    dt = datetime.utcnow().isoformat('T')+"Z"
+    dt = datetime.utcnow().strftime('%a, %d %b %Y %H:%M:%S GMT')
     azh = ""
     retval = "%s\n%s\n%s\n%s\n%s%s" % (method,
         cmd5, ctype, dt, azh, cr)
@@ -75,7 +75,10 @@ def get_data(ak, key, method, vhost_mode, bucket, url):
     print headers
     for k,v in headers.iteritems():
         q.add_header(k, v)
-    return urlopen(q).read()
+    try:
+        return urlopen(q).read()
+    except HTTPError as e:
+        print 'Got exception', e
 
 
 if __name__ == "__main__":
