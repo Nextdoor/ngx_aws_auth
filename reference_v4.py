@@ -4,6 +4,8 @@ from hashlib import sha1, sha256
 import hmac
 import base64
 import sys
+from xml.dom.minidom import parseString
+
 
 try:
     from urllib.request import Request, urlopen, HTTPError  # Python 3
@@ -50,13 +52,14 @@ def long_date(yyyymmdd):
 
 
 def canon_querystring(qs_map):
-    return '' # TODO: impl
+    return {'cqs':'', 'qsmap':{}} # TODO: impl
 
 
 def make_headers(dt, bucket, aws_headers, content_hash):
+    now = datetime.utcnow().strftime('%Y%m%dT%H%M%SZ')
     headers = []
     headers.append(['x-amz-content-sha256', content_hash])
-    headers.append(['x-amz-date', long_date(dt)])
+    headers.append(['x-amz-date', now])
     headers.append(['Host', '%s.s3.amazonaws.com' % (bucket)])
 
     hmap = {}
@@ -68,7 +71,9 @@ def make_headers(dt, bucket, aws_headers, content_hash):
     headers.sort(key =lambda x:x[0])
 
     signed_headers = ';'.join([x[0] for x in headers])
-    canon_headers = '\n'.join([':'.join(x) for x in headers])
+    canon_headers = ''
+    for h in [':'.join(x) for x in headers]:
+        canon_headers = '%s%s\n' % (canon_headers, h)
 
     return {'hmap': hmap, 'sh': signed_headers, 'ch': canon_headers }
 
@@ -77,9 +82,8 @@ def canon_request(dt, bucket, url, qs_map, aws_headers):
     qs = canon_querystring(qs_map)
     payload_hash = 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855' #hardcoded
     header_info = make_headers(dt, bucket, None, payload_hash)
-    curl = 'http://%s.s3.amazonaws.com%s\n%s' % (bucket, url, qs)
-    cr = "\n".join(('GET', curl, header_info['ch'], header_info['sh'], payload_hash)) # hardcoded method
-    #print cr
+    cr = "\n".join(('GET', url, qs['cqs'], header_info['ch'], header_info['sh'], payload_hash)) # hardcoded method
+    print cr
 
     return {'cr_str': cr, 'headers': header_info['hmap'], 'qs': qs, 'sh': header_info['sh']}
 
@@ -97,7 +101,8 @@ def str_to_sign_v4(region, dt, bucket, url, qs_map, aws_headers):
     h265.update(cr_info['cr_str'])
     hd = h265.hexdigest()
     scope = get_scope(dt, region)
-    s2s = "\n".join(('AWS4-HMAC-SHA256', long_date(dt), scope, hd))
+    s2s = "\n".join(('AWS4-HMAC-SHA256', cr_info['headers']['x-amz-date'], scope, hd))
+    print s2s
     return {'s2s': s2s, 'headers': cr_info['headers'], 'qs':cr_info['qs'], 'scope': scope, 'sh': cr_info['sh']}
 
 def sign(access_id, key, region, dt, bucket, url, qs_map, aws_headers):
@@ -113,15 +118,17 @@ def sign(access_id, key, region, dt, bucket, url, qs_map, aws_headers):
 def get_data(access_id, key, region, dt, bucket, url, qs_map, aws_headers):
     s = sign(access_id, key, region, dt, bucket, url, qs_map, aws_headers)
     rurl = "http://%s.s3.amazonaws.com%s" % (bucket, url)
-    print rurl
-    print s
+#    print rurl
+#    print s
     q = Request(rurl)
     for k,v in s['headers'].iteritems():
         q.add_header(k, v)
     try:
         return urlopen(q).read()
     except HTTPError as e:
-        print 'Got exception', "".join(e.readlines())
+        exml = "".join(e.readlines())
+        xml = parseString(exml)
+        print 'Got exception\n-------------------------\n\n', xml.toprettyxml()
 
 
 if __name__ == '__main__':
