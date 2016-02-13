@@ -55,11 +55,11 @@ def canon_querystring(qs_map):
     return {'cqs':'', 'qsmap':{}} # TODO: impl
 
 
-def make_headers(bucket, aws_headers, content_hash):
-    now = datetime.utcnow().strftime('%Y%m%dT%H%M%SZ')
+def make_headers(req_time, bucket, aws_headers, content_hash):
+#    req_time = datetime.utcnow().strftime('%Y%m%dT%H%M%SZ')
     headers = []
     headers.append(['x-amz-content-sha256', content_hash])
-    headers.append(['x-amz-date', now])
+    headers.append(['x-amz-date', req_time])
     headers.append(['Host', '%s.s3.amazonaws.com' % (bucket)])
 
     hmap = {}
@@ -78,10 +78,10 @@ def make_headers(bucket, aws_headers, content_hash):
     return {'hmap': hmap, 'sh': signed_headers, 'ch': canon_headers }
 
 
-def canon_request(bucket, url, qs_map, aws_headers):
+def canon_request(req_time, bucket, url, qs_map, aws_headers):
     qs = canon_querystring(qs_map)
     payload_hash = 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855' #hardcoded
-    header_info = make_headers(bucket, None, payload_hash)
+    header_info = make_headers(req_time, bucket, None, payload_hash)
     cr = "\n".join(('GET', url, qs['cqs'], header_info['ch'], header_info['sh'], payload_hash)) # hardcoded method
     print cr
 
@@ -95,8 +95,8 @@ def sign_body(body=None):
 def get_scope(dt, region):
     return '%s/%s/s3/aws4_request' % (dt, region)
 
-def str_to_sign_v4(scope, bucket, url, qs_map, aws_headers):
-    cr_info = canon_request(bucket, url, qs_map, aws_headers)
+def str_to_sign_v4(req_time, scope, bucket, url, qs_map, aws_headers):
+    cr_info = canon_request(req_time, bucket, url, qs_map, aws_headers)
     h265 = sha256()
     h265.update(cr_info['cr_str'])
     hd = h265.hexdigest()
@@ -104,8 +104,8 @@ def str_to_sign_v4(scope, bucket, url, qs_map, aws_headers):
     print s2s
     return {'s2s': s2s, 'headers': cr_info['headers'], 'qs':cr_info['qs'], 'scope': scope, 'sh': cr_info['sh']}
 
-def sign(access_id, key, scope, bucket, url, qs_map, aws_headers):
-    s2s = str_to_sign_v4(scope, bucket, url, qs_map, aws_headers)
+def sign(req_time, access_id, key, scope, bucket, url, qs_map, aws_headers):
+    s2s = str_to_sign_v4(req_time, scope, bucket, url, qs_map, aws_headers)
     retval = hmac.new(key, s2s['s2s'], sha256)
     sig = retval.hexdigest()
     auth_header = 'AWS4-HMAC-SHA256 Credential=%s/%s,SignedHeaders=%s,Signature=%s' % (
@@ -114,8 +114,8 @@ def sign(access_id, key, scope, bucket, url, qs_map, aws_headers):
     return {'headers': s2s['headers'], 'qs':s2s['qs']}
 
 
-def get_data(access_id, key, scope, bucket, url, qs_map, aws_headers):
-    s = sign(access_id, key, scope, bucket, url, qs_map, aws_headers)
+def get_data(req_time, access_id, key, scope, bucket, url, qs_map, aws_headers):
+    s = sign(req_time, access_id, key, scope, bucket, url, qs_map, aws_headers)
     rurl = "http://%s.s3.amazonaws.com%s" % (bucket, url)
 #    print rurl
 #    print s
@@ -134,4 +134,6 @@ if __name__ == '__main__':
     aid = sys.argv[1]
     b64_key = sys.argv[2]
     scope = sys.argv[3]
-    get_data(aid, base64.b64decode(b64_key), scope, 'hw.anomalizer', '/lock.txt', {}, {})
+    request_time = datetime.utcnow().strftime('%Y%m%dT%H%M%SZ') if len(sys.argv) == 4 else sys.argv[4]
+    print "Request time is %s" % request_time
+    get_data(request_time, aid, base64.b64decode(b64_key), scope, 'hw.anomalizer', '/lock.txt', {}, {})
