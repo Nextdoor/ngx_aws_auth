@@ -56,7 +56,6 @@ def canon_querystring(qs_map):
 
 
 def make_headers(req_time, bucket, aws_headers, content_hash):
-#    req_time = datetime.utcnow().strftime('%Y%m%dT%H%M%SZ')
     headers = []
     headers.append(['x-amz-content-sha256', content_hash])
     headers.append(['x-amz-date', req_time])
@@ -111,7 +110,7 @@ def sign(req_time, access_id, key, scope, bucket, url, qs_map, aws_headers):
     auth_header = 'AWS4-HMAC-SHA256 Credential=%s/%s,SignedHeaders=%s,Signature=%s' % (
         access_id, s2s['scope'], s2s['sh'], sig)
     s2s['headers']['Authorization'] = auth_header
-    return {'headers': s2s['headers'], 'qs':s2s['qs']}
+    return {'headers': s2s['headers'], 'qs':s2s['qs'], 'sig': sig}
 
 
 def get_data(req_time, access_id, key, scope, bucket, url, qs_map, aws_headers):
@@ -129,7 +128,6 @@ def get_data(req_time, access_id, key, scope, bucket, url, qs_map, aws_headers):
         xml = parseString(exml)
         print 'Got exception\n-------------------------\n\n', xml.toprettyxml()
 
-'''
 if __name__ == '__main__':
     aid = sys.argv[1]
     b64_key = sys.argv[2]
@@ -137,13 +135,18 @@ if __name__ == '__main__':
     request_time = datetime.utcnow().strftime('%Y%m%dT%H%M%SZ') if len(sys.argv) == 4 else sys.argv[4]
     print "Request time is %s" % request_time
     get_data(request_time, aid, base64.b64decode(b64_key), scope, 'hw.anomalizer', '/lock.txt', {}, {})
-'''
 
 
 class TestStringMethods(unittest.TestCase):
-    def test_upper(self):
-        pass
+    def test_simple_get(self):
+        now = '20150830T123600Z'
+        key = base64.b64decode('k4EntTNoEN22pdavRF/KyeNx+e1BjtOGsCKu2CkBvnU=')
+        aid = 'AKIDEXAMPLE'
+        scope = '20150830/us-east-1/service/aws4_request'
+        s = sign(now, aid, key, scope, 'example', '/', {}, {})
+        self.assertEqual(s['sig'], '5fa00fa31553b73ebf1942676e86291e8372ff2a2260956d9b8aae1d763fbf31')
 
-
+'''
 if __name__ == '__main__':
     unittest.main()
+'''
