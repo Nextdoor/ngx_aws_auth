@@ -5,10 +5,12 @@
 
 #define AMZ_DATE_MAX_LEN 20
 
-static ngx_str_t* ngx_aws_auth__compute_request_time(ngx_pool_t *pool) {
-
-	const ngx_str_t *retval = ngx_palloc(pool, sizeof(ngx_str_t));
+static ngx_str_t* ngx_aws_auth__compute_request_time(ngx_pool_t *pool, const time_t *timep) {
+	ngx_str_t *const retval = ngx_palloc(pool, sizeof(ngx_str_t));
 	retval->data = ngx_palloc(pool, AMZ_DATE_MAX_LEN);
+	struct tm *tm_p = ngx_palloc(pool, sizeof(struct tm));
+	gmtime_r(timep, tm_p);
+	retval->len = strftime(retval->data, AMZ_DATE_MAX_LEN - 1, "%Y%m%dT%H%M%SZ", tm_p);
 	return retval;
 }
 
