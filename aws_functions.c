@@ -3,6 +3,8 @@
 #include <ngx_core.h>
 #include <ngx_http.h>
 
+#include "crypto_helper.h"
+
 #define AMZ_DATE_MAX_LEN 20
 
 static ngx_str_t* ngx_aws_auth__compute_request_time(ngx_pool_t *pool, const time_t *timep) {
