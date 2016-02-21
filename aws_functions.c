@@ -55,7 +55,27 @@ static void ngx_aws_auth__string_to_sign(ngx_pool_t *pool,
 	// form the string to sign
 }
 
-static void ngx_aws_auth__sign(ngx_pool_t *pool, ngx_http_request_t *req) {
+static ngx_str_t* ngx_aws_auth__make_auth_token(ngx_pool_t *pool,
+	ngx_str_t *signature, ngx_str_t *signed_header_names,
+	ngx_str_t *access_key_id, ngx_str_t *key_scope) {
+
+    const char FMT_STRING[] = "AWS4-HMAC-SHA256 Credential=%v/%v,SignedHeaders=%v,Signature=%v";
+	ngx_str_t *authz;
+
+	authz = ngx_palloc(pool, sizeof(ngx_str_t));
+	authz->len = access_key_id->len + key_scope->len + signed_header_names->len
+		+ signature->len + sizeof(FMT_STRING);
+	authz->data = ngx_palloc(pool, authz->len);
+    ngx_snprintf(authz->data, authz->len, FMT_STRING,
+		access_key_id, key_scope, signed_header_names, signature);
+	authz->len = strnlen(authz->data, authz->len);
+	return authz;
+}
+
+
+static void ngx_aws_auth__sign(ngx_pool_t *pool, ngx_http_request_t *req,
+	ngx_str_t *access_key_id, ngx_str_t *secret, ngx_str_t *key_scope) {
+
 	// TODO:
 	// get string to sign
 	// generate signature
