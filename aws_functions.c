@@ -18,8 +18,26 @@ static void ngx_aws_auth__canonize_query_string(ngx_pool_t *pool,
 	ngx_http_request_t *req) {
 }
 
-static void ngx_aws_auth__canonize_headers(ngx_pool_t *pool,
-	ngx_http_request_t *req) {
+
+static ngx_str_t* ngx_aws_auth__host_from_bucket(ngx_pool_t *pool, ngx_str_t *s3_bucket) {
+	static const char HOST_PATTERN[] = ".s3.amazonaws.com";
+	ngx_str_t *host;
+
+	host = ngx_palloc(pool, sizeof(ngx_str_t));
+	host->len = s3_bucket->len + sizeof(HOST_PATTERN) + 1;
+	host->data = ngx_palloc(pool, host->len);
+	ngx_snprintf(host->data, host->len, "%v%s", s3_bucket, HOST_PATTERN);
+	host->len = strnlen(host->data, host->len);
+
+	return host;
+}
+
+static ngx_str_t* ngx_aws_auth__canonize_headers(ngx_pool_t *pool,
+	ngx_http_request_t *req,
+	ngx_str_t *s3_bucket, ngx_str_t *date, ngx_str_t *content_hash) {
+	static const char HOST_PATTERN[] = ".s3.amazonaws.com";
+
+	ngx_str_t *host = ngx_aws_auth__host_from_bucket(pool, s3_bucket);
 }
 
 static void ngx_aws_auth__make_canonical_request(ngx_pool_t *pool,
