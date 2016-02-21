@@ -12,10 +12,10 @@ all: aws_functions.o crypto_helper_openssl.o
 
 NGX_OBJS := $(shell find ${NGX_PATH}/objs -name \*.o)
 
-test:
+test: crypto_helper_openssl.o
 	strip -N main -o ${NGX_PATH}/objs/src/core/nginx_without_main.o ${NGX_PATH}/objs/src/core/nginx.o
 	mv ${NGX_PATH}/objs/src/core/nginx_without_main.o ${NGX_PATH}/objs/src/core/nginx.o
-	$(CC) test_suite.c $(CFLAGS) -o test_suite -lcmocka ${NGX_OBJS} -ldl -lpthread -lcrypt -lpcre -lcrypto -lcrypto -lz
+	$(CC) test_suite.c $(CFLAGS) -o test_suite -lcmocka ${NGX_OBJS} -ldl -lpthread -lcrypt -lpcre -lcrypto -lcrypto -lz $<
 	./test_suite
 
 clean:
