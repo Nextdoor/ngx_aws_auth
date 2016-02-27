@@ -1,3 +1,25 @@
+/* AWS V4 Signature implementation
+ *
+ * This file contains the modularized source code for accepting a given HTTP
+ * request as ngx_http_request_t and modifiying it to introduce the
+ * Authorization header in compliance with the AWS V4 spec. The IAM access
+ * key and the signing key (not to be confused with the secret key) along
+ * with it's scope are taken as inputs.
+ *
+ * The actual nginx module binding code is not present in this file. This file
+ * is meant to serve as an "AWS Signing SDK for nginx".
+ *
+ * Maintainer/contributor rules
+ *
+ * (1) All functions here need to be static and inline.
+ * (2) Every function must have it's own set of unit tests.
+ * (3) The code must be written in a thread-safe manner. This is usually not
+ *     a problem with standard nginx functions. However, care must be taken
+ *     when using very old C functions such as strtok, gmtime, etc. etc.
+ *     Always use the _r variants of such functions
+ * (4) All heap allocation must be done using ngx_pool_t instead of malloc
+ */
+
 #ifndef __NGX_AWS_FUNCTIONS_INTERNAL__H__
 #define __NGX_AWS_FUNCTIONS_INTERNAL__H__
 
