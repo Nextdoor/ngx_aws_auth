@@ -13,7 +13,7 @@ static void null_test_success(void **state) {
 
 static void host_header_ctor(void **state) {
 	ngx_str_t bucket;
-	ngx_str_t* host;
+	const ngx_str_t* host;
 
     (void) state; /* unused */
 
@@ -30,7 +30,7 @@ static void host_header_ctor(void **state) {
 
 static void x_amz_date(void **state) {
 	time_t t;
-	ngx_str_t* date;
+	const ngx_str_t* date;
 
     (void) state; /* unused */
 	
