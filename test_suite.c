@@ -3,8 +3,7 @@
 #include <setjmp.h>
 #include <cmocka.h>
 
-#include "crypto_helper.h"
-#include "aws_functions.c"
+#include "aws_functions.h"
 
 ngx_pool_t *pool;
 

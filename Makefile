@@ -2,7 +2,7 @@ CC=gcc
 CFLAGS=-I${NGX_PATH}/src/os/unix -I${NGX_PATH}/src/core -I${NGX_PATH}/src/http -I${NGX_PATH}/src/http/modules -I${NGX_PATH}/src/event -I${NGX_PATH}/objs/ -I.
 
 
-all: aws_functions.o crypto_helper_openssl.o
+all: crypto_helper_openssl.o
 
 %.o: %.c
 	$(CC) -c -o $@ $< $(CFLAGS)
