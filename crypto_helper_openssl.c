@@ -17,7 +17,9 @@
 
 static const EVP_MD* evp_md = NULL;
 
-ngx_str_t* ngx_aws_auth__sign_sha256_hex(ngx_pool_t *pool, ngx_str_t *blob, ngx_str_t *signing_key) {
+ngx_str_t* ngx_aws_auth__sign_sha256_hex(ngx_pool_t *pool, const ngx_str_t *blob,
+    const ngx_str_t *signing_key) {
+
     unsigned int      md_len;
     unsigned char     md[EVP_MAX_MD_SIZE];
 	ngx_str_t *const retval = ngx_palloc(pool, sizeof(ngx_str_t));
@@ -33,7 +35,7 @@ ngx_str_t* ngx_aws_auth__sign_sha256_hex(ngx_pool_t *pool, ngx_str_t *blob, ngx_
 	return retval;
 }
 
-ngx_str_t* ngx_aws_auth__hash_sha256(ngx_pool_t *pool, ngx_str_t *blob) {
+ngx_str_t* ngx_aws_auth__hash_sha256(ngx_pool_t *pool, const ngx_str_t *blob) {
     unsigned char hash[SHA256_DIGEST_LENGTH];
 	ngx_str_t *const retval = ngx_palloc(pool, sizeof(ngx_str_t));
 
