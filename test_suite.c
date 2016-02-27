@@ -67,12 +67,30 @@ static void hmac_sha256(void **state) {
 }
 
 
+static void sha256(void **state) {
+    ngx_str_t text;
+    ngx_str_t* hash;
+    (void) state; /* unused */
+
+    text.data = "asdf"; text.len=4;
+    hash = ngx_aws_auth__hash_sha256(pool, &text);
+	assert_int_equal(64, hash->len);
+	assert_string_equal("f0e4c2f76c58916ec258f246851bea091d14d4247a2fc3e18694461b1816e13b", hash->data);
+
+    text.len=0;
+    hash = ngx_aws_auth__hash_sha256(pool, &text);
+	assert_int_equal(64, hash->len);
+	assert_string_equal("e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855", hash->data);
+}
+
+
 int main() {
     const struct CMUnitTest tests[] = {
         cmocka_unit_test(null_test_success),
         cmocka_unit_test(x_amz_date),
         cmocka_unit_test(host_header_ctor),
         cmocka_unit_test(hmac_sha256),
+        cmocka_unit_test(sha256),
     };
 
 	pool = ngx_create_pool(1000000, NULL);

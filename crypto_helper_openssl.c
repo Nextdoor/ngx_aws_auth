@@ -11,6 +11,7 @@
 #include <openssl/buffer.h>
 #include <openssl/evp.h>
 #include <openssl/hmac.h>
+#include <openssl/sha.h>
 
 #include "crypto_helper.h"
 
@@ -29,5 +30,20 @@ ngx_str_t* ngx_aws_auth__sign_sha256_hex(ngx_pool_t *pool, ngx_str_t *blob, ngx_
 	retval->data = ngx_palloc(pool, md_len * 2 + 1);
 	retval->len = md_len * 2;
 	ngx_hex_dump(retval->data, md, md_len);
+	return retval;
+}
+
+ngx_str_t* ngx_aws_auth__hash_sha256(ngx_pool_t *pool, ngx_str_t *blob) {
+    unsigned char hash[SHA256_DIGEST_LENGTH];
+	ngx_str_t *const retval = ngx_palloc(pool, sizeof(ngx_str_t));
+
+    SHA256_CTX sha256;
+    SHA256_Init(&sha256);
+    SHA256_Update(&sha256, blob->data, blob->len);
+    SHA256_Final(hash, &sha256);
+
+    retval->data = ngx_palloc(pool, SHA256_DIGEST_LENGTH * 2 + 1);
+    retval->len = SHA256_DIGEST_LENGTH * 2;
+	ngx_hex_dump(retval->data, hash, sizeof(hash));
 	return retval;
 }
