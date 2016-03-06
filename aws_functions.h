@@ -35,7 +35,12 @@
 
 struct AwsCanonicalRequestDetails {
 	ngx_str_t *canon_request;
-	ngx_str_t *canon_header_names;
+	ngx_str_t *signed_header_names;
+};
+
+struct AwsCanonicalHeaderDetails {
+	ngx_str_t *canon_header;
+	ngx_str_t *signed_header_names;
 };
 
 static const ngx_str_t EMPTY_STRING_SHA256 = ngx_string("e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855");
@@ -71,13 +76,16 @@ static inline const ngx_str_t* ngx_aws_auth__host_from_bucket(ngx_pool_t *pool,
 	return host;
 }
 
-static inline const ngx_str_t* ngx_aws_auth__canonize_headers(ngx_pool_t *pool,
+static inline const struct AwsCanonicalHeaderDetails ngx_aws_auth__canonize_headers(ngx_pool_t *pool,
 		const ngx_http_request_t *req,
 		const ngx_str_t *s3_bucket, const ngx_str_t *amz_date,
 		const ngx_str_t *content_hash) {
-	static const char HOST_PATTERN[] = ".s3.amazonaws.com";
+	const struct AwsCanonicalHeaderDetails retval;
 
 	const ngx_str_t *host = ngx_aws_auth__host_from_bucket(pool, s3_bucket);
+
+	// TODO: real impl
+	return retval;
 }
 
 static inline const ngx_str_t* ngx_aws_auth__request_body_hash(ngx_pool_t *pool,
@@ -86,22 +94,37 @@ static inline const ngx_str_t* ngx_aws_auth__request_body_hash(ngx_pool_t *pool,
 	return &EMPTY_STRING_SHA256;
 }
 
+static inline const ngx_str_t* ngx_aws_auth__canon_url(ngx_pool_t *pool, const ngx_http_request_t *req) {
+	return &req->uri; // TODO: handle cases involving either query string or encoded url path
+}
+
 static inline const struct AwsCanonicalRequestDetails ngx_aws_auth__make_canonical_request(ngx_pool_t *pool,
 		const ngx_http_request_t *req,
 		const ngx_str_t *s3_bucket_name, const ngx_str_t *amz_date) {
-	const struct AwsCanonicalRequestDetails retval = {NULL, NULL};
-	const ngx_str_t *canon_qs;
-	const ngx_str_t *requst_body_hash;
-
+	struct AwsCanonicalRequestDetails retval;
+	
 	// canonize query string
-	canon_qs = ngx_aws_auth__canonize_query_string(pool, req);
+	const ngx_str_t *canon_qs = ngx_aws_auth__canonize_query_string(pool, req);
 
 	// compute request body hash
-	requst_body_hash = ngx_aws_auth__request_body_hash(pool, req);
+	const ngx_str_t *request_body_hash = ngx_aws_auth__request_body_hash(pool, req);
 
-	// canonize headers
+	const struct AwsCanonicalHeaderDetails canon_headers = 
+		ngx_aws_auth__canonize_headers(pool, req, s3_bucket_name, amz_date, request_body_hash);
+	retval.signed_header_names = canon_headers.signed_header_names;
 	
-	// TODO: compute retval
+	const ngx_str_t *http_method = &(req->method_name);
+	const ngx_str_t *url = ngx_aws_auth__canon_url(pool, req);
+
+	retval.canon_request = ngx_palloc(pool, sizeof(ngx_str_t));
+	retval.canon_request->data = ngx_palloc(pool, 10000);
+	retval.canon_request->len = 10000;
+
+	ngx_snprintf(retval.canon_request->data, retval.canon_request->len, "%v\n%v\n%v\n%v\n%v",
+		http_method, canon_qs, canon_headers.canon_header,
+		canon_headers.signed_header_names, request_body_hash);
+	retval.canon_request->len = strnlen(retval.canon_request->data, retval.canon_request->len);
+
 	return retval;
 }
 
@@ -155,7 +178,7 @@ static inline void ngx_aws_auth__sign(ngx_pool_t *pool, ngx_http_request_t *req,
 
 	// constuct auth header
 	const ngx_str_t *auth_header_value = ngx_aws_auth__make_auth_token(pool, signature,
-											canon_request.canon_header_names, access_key_id, key_scope);
+											canon_request.signed_header_names, access_key_id, key_scope);
 	
 	// TODO: attach auth header to outbound response
 }
