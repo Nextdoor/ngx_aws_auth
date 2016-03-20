@@ -82,6 +82,19 @@ static void sha256(void **state) {
 	assert_string_equal("e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855", hash->data);
 }
 
+static void canon_header_string(void **state) {
+    (void) state; /* unused */
+
+    ngx_str_t bucket, date, hash;
+    struct AwsCanonicalHeaderDetails retval;
+
+    bucket.data = "bugait"; bucket.len = 6;
+    date.data = "20160221T063112Z"; date.len = 16;
+    hash.data = "f0e4c2f76c58916ec258f246851bea091d14d4247a2fc3e18694461b1816e13b"; hash.len = 64;
+
+    retval = ngx_aws_auth__canonize_headers(pool, NULL, &bucket, &date, &hash);
+}
+
 
 int main() {
     const struct CMUnitTest tests[] = {
@@ -90,6 +103,7 @@ int main() {
         cmocka_unit_test(host_header_ctor),
         cmocka_unit_test(hmac_sha256),
         cmocka_unit_test(sha256),
+        cmocka_unit_test(canon_header_string),
     };
 
 	pool = ngx_create_pool(1000000, NULL);
