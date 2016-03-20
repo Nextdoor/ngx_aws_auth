@@ -202,8 +202,8 @@ static inline const struct AwsCanonicalRequestDetails ngx_aws_auth__make_canonic
 	retval.canon_request->data = ngx_palloc(pool, 10000);
 	retval.canon_request->len = 10000;
 
-	ngx_snprintf(retval.canon_request->data, retval.canon_request->len, "%V\n%V\n%V\n%V\n%V",
-		http_method, canon_qs, canon_headers.canon_header_str,
+	ngx_snprintf(retval.canon_request->data, retval.canon_request->len, "%V\n%V\n%V\n%V\n%V\n%V",
+		http_method, url, canon_qs, canon_headers.canon_header_str,
 		canon_headers.signed_header_names, request_body_hash);
 	retval.canon_request->len = strnlen(retval.canon_request->data, retval.canon_request->len);
 	retval.header_list = canon_headers.header_list;

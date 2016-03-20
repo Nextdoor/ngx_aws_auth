@@ -111,18 +111,52 @@ static void signed_headers(void **state) {
     assert_string_equal(retval.signed_header_names->data, "host;x-amz-content-sha256;x-amz-date");
 }
 
+static void canonical_request_sans_qs(void **state) {
+    (void) state; /* unused */
+	const ngx_str_t bucket = ngx_string("example");
+	const ngx_str_t aws_date = ngx_string("20160221T063112Z");
+	const ngx_str_t url = ngx_string("/");
+	const ngx_str_t method = ngx_string("GET");
+	
+	struct AwsCanonicalRequestDetails result;
+	ngx_http_request_t request;
+
+	request.uri = url;
+	request.method_name = method;
+
+	result = ngx_aws_auth__make_canonical_request(pool, &request, &bucket, &aws_date);
+	assert_string_equal(result.canon_request->data, "GET\n\
+/\n\
+\n\
+host:example.s3.amazonaws.com\n\
+x-amz-content-sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855\n\
+x-amz-date:20160221T063112Z\n\
+\n\
+host;x-amz-content-sha256;x-amz-date\n\
+e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855");
+}
+
 static void basic_get_signature(void **state) {
     (void) state; /* unused */
 
+	const ngx_str_t url = ngx_string("/");
+	const ngx_str_t method = ngx_string("GET");
+
 	const ngx_str_t key_scope = ngx_string("20150830/us-east-1/service/aws4_request");
-	const ngx_str_t signing_key_b64e = ngx_string("k4EntTNoEN22pdavRF/KyeNx+e1BjtOGsCKu2CkBvnU=");
 	const ngx_str_t bucket = ngx_string("example");
+	ngx_str_t signing_key, signing_key_b64e = ngx_string("k4EntTNoEN22pdavRF/KyeNx+e1BjtOGsCKu2CkBvnU=");
 	ngx_http_request_t request;
 
-	request.start_sec = 1440938160;
+	request.start_sec = 1440938160; /* 20150830T123600Z */
+	request.uri = url;
+	request.method_name = method;
+
+	signing_key.len = 64;
+	signing_key.data = ngx_palloc(pool, signing_key.len );
+	ngx_decode_base64(&signing_key, &signing_key_b64e);
 
 	struct AwsSignedRequestDetails result = ngx_aws_auth__compute_signature(pool, &request,
-								&signing_key_b64e, &key_scope, &bucket);
+								&signing_key, &key_scope, &bucket);
 	assert_string_equal(result.signature->data, "4ed4ec875ff02e55c7903339f4f24f8780b986a9cc9eff03f324d31da6a57690");
 }
 
@@ -136,6 +170,7 @@ int main() {
         cmocka_unit_test(sha256),
         cmocka_unit_test(canon_header_string),
         cmocka_unit_test(signed_headers),
+        cmocka_unit_test(canonical_request_sans_qs),
         cmocka_unit_test(basic_get_signature),
     };
 
