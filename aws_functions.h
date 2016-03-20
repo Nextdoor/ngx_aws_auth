@@ -38,6 +38,7 @@ typedef ngx_keyval_t header_pair_t;
 struct AwsCanonicalRequestDetails {
 	ngx_str_t *canon_request;
 	ngx_str_t *signed_header_names;
+	ngx_array_t *header_list; // list of header_pair_t
 };
 
 struct AwsCanonicalHeaderDetails {
@@ -199,6 +200,7 @@ static inline const struct AwsCanonicalRequestDetails ngx_aws_auth__make_canonic
 		http_method, canon_qs, canon_headers.canon_header_str,
 		canon_headers.signed_header_names, request_body_hash);
 	retval.canon_request->len = strnlen(retval.canon_request->data, retval.canon_request->len);
+	retval.header_list = canon_headers.header_list;
 
 	return retval;
 }
