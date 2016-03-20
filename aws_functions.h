@@ -119,7 +119,9 @@ static inline const struct AwsCanonicalHeaderDetails ngx_aws_auth__canonize_head
 	
 	header_ptr = ngx_array_push(settable_header_array);
 	header_ptr->key = HOST_HEADER;
-	header_ptr->value = HOST_HEADER; // TODO: real host header value
+	header_ptr->value.len = s3_bucket->len + 40;
+	header_ptr->value.data = ngx_palloc(pool, header_ptr->value.len);
+	header_ptr->value.len = ngx_snprintf(header_ptr->value.data, header_ptr->value.len, "%V.s3.amazonaws.com", s3_bucket) - header_ptr->value.data;
 
 	ngx_qsort(settable_header_array->elts, (size_t) settable_header_array->nelts,
 		sizeof(header_pair_t), ngx_aws_auth__cmp_hnames);
