@@ -127,20 +127,22 @@ static inline const struct AwsCanonicalHeaderDetails ngx_aws_auth__canonize_head
 	for(i = 0; i < settable_header_array->nelts; i++) {
 		header_names_size += ((header_pair_t*)settable_header_array->elts)[i].key.len + 1;
 		header_nameval_size += ((header_pair_t*)settable_header_array->elts)[i].key.len + 1;
-		header_nameval_size += ((header_pair_t*)settable_header_array->elts)[i].value.len + 1;
+		header_nameval_size += ((header_pair_t*)settable_header_array->elts)[i].value.len + 2;
 	}
 
 	/* make canonical headers string */
 	retval.canon_header_str = ngx_palloc(pool, sizeof(ngx_str_t));
 	retval.canon_header_str->data = ngx_palloc(pool, header_nameval_size);
+	
 	for(i = 0, used = 0, buf_progress = retval.canon_header_str->data; 
 		i < settable_header_array->nelts;
 		i++, used = buf_progress - retval.canon_header_str->data) {
-		ngx_snprintf(buf_progress, header_nameval_size - used, "%V:%V\n",
-			((header_pair_t*)settable_header_array->elts)[i].key,
-			((header_pair_t*)settable_header_array->elts)[i].value);
+		buf_progress = ngx_snprintf(buf_progress, header_nameval_size - used, "%V:%V\n",
+			& ((header_pair_t*)settable_header_array->elts)[i].key,
+			& ((header_pair_t*)settable_header_array->elts)[i].value);
 	}
 	retval.canon_header_str->len = used;
+	
 
 	return retval;
 }

@@ -93,6 +93,8 @@ static void canon_header_string(void **state) {
     hash.data = "f0e4c2f76c58916ec258f246851bea091d14d4247a2fc3e18694461b1816e13b"; hash.len = 64;
 
     retval = ngx_aws_auth__canonize_headers(pool, NULL, &bucket, &date, &hash);
+    assert_string_equal(retval.canon_header_str->data, 
+        "host:bugait.s3.amazonaws.com\nx-amz-content-sha256:f0e4c2f76c58916ec258f246851bea091d14d4247a2fc3e18694461b1816e13b\nx-amz-date:20160221T063112Z\n");
 }
 
 
