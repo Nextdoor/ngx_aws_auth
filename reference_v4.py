@@ -128,6 +128,7 @@ def get_data(req_time, access_id, key, scope, bucket, url, qs_map, aws_headers):
         xml = parseString(exml)
         print 'Got exception\n-------------------------\n\n', xml.toprettyxml()
 
+'''
 if __name__ == '__main__':
     aid = sys.argv[1]
     b64_key = sys.argv[2]
@@ -135,7 +136,7 @@ if __name__ == '__main__':
     request_time = datetime.utcnow().strftime('%Y%m%dT%H%M%SZ') if len(sys.argv) == 4 else sys.argv[4]
     print "Request time is %s" % request_time
     get_data(request_time, aid, base64.b64decode(b64_key), scope, 'hw.anomalizer', '/lock.txt', {}, {})
-
+'''
 
 class TestStringMethods(unittest.TestCase):
     def test_simple_get(self):
@@ -146,7 +147,6 @@ class TestStringMethods(unittest.TestCase):
         s = sign(now, aid, key, scope, 'example', '/', {}, {})
         self.assertEqual(s['sig'], '5fa00fa31553b73ebf1942676e86291e8372ff2a2260956d9b8aae1d763fbf31')
 
-'''
+
 if __name__ == '__main__':
     unittest.main()
-'''

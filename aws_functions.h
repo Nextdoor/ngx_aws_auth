@@ -47,6 +47,12 @@ struct AwsCanonicalHeaderDetails {
 	ngx_array_t *header_list; // list of header_pair_t
 };
 
+struct AwsSignedRequestDetails {
+	const ngx_str_t *signature;
+	const ngx_str_t *signed_header_names;
+	ngx_array_t *header_list; // list of header_pair_t
+};
+
 static const ngx_str_t EMPTY_STRING_SHA256 = ngx_string("e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855");
 static const ngx_str_t EMPTY_STRING = ngx_null_string;
 static const ngx_str_t AMZ_HASH_HEADER = ngx_string("x-amz-content-sha256");
@@ -235,12 +241,12 @@ static inline const ngx_str_t* ngx_aws_auth__make_auth_token(ngx_pool_t *pool,
 	return authz;
 }
 
-
-static inline void ngx_aws_auth__sign(ngx_pool_t *pool, ngx_http_request_t *req,
-		const ngx_str_t *access_key_id,
+static inline const struct AwsSignedRequestDetails ngx_aws_auth__compute_signature(ngx_pool_t *pool, ngx_http_request_t *req,
 		const ngx_str_t *signing_key,
 		const ngx_str_t *key_scope,
 		const ngx_str_t *s3_bucket_name) {
+	struct AwsSignedRequestDetails retval;
+
 	const ngx_str_t *date = ngx_aws_auth__compute_request_time(pool, &req->start_sec);
 	const struct AwsCanonicalRequestDetails canon_request = 
 		ngx_aws_auth__make_canonical_request(pool, req, s3_bucket_name, date);
@@ -252,11 +258,24 @@ static inline void ngx_aws_auth__sign(ngx_pool_t *pool, ngx_http_request_t *req,
 	// generate signature
 	const ngx_str_t *signature = ngx_aws_auth__sign_sha256_hex(pool, string_to_sign, signing_key);
 
+	retval.signature = signature;
+	retval.signed_header_names = canon_request.signed_header_names;
+	retval.header_list = canon_request.header_list;
+	return retval;
+}
 
-	// constuct auth header
-	const ngx_str_t *auth_header_value = ngx_aws_auth__make_auth_token(pool, signature,
-											canon_request.signed_header_names, access_key_id, key_scope);
-	
+static inline void ngx_aws_auth__sign(ngx_pool_t *pool, ngx_http_request_t *req,
+		const ngx_str_t *access_key_id,
+		const ngx_str_t *signing_key,
+		const ngx_str_t *key_scope,
+		const ngx_str_t *s3_bucket_name) {
+	const struct AwsSignedRequestDetails signature_details = ngx_aws_auth__compute_signature(pool, req, signing_key, key_scope, s3_bucket_name);
+
+
+	const ngx_str_t *auth_header_value = ngx_aws_auth__make_auth_token(pool, signature_details.signature,
+											signature_details.signed_header_names, access_key_id, key_scope);
+
+
 	// TODO: attach auth header to outbound response
 }
 
