@@ -123,6 +123,7 @@ static inline const struct AwsCanonicalHeaderDetails ngx_aws_auth__canonize_head
 
 	ngx_qsort(settable_header_array->elts, (size_t) settable_header_array->nelts,
 		sizeof(header_pair_t), ngx_aws_auth__cmp_hnames);
+	retval.header_list = settable_header_array;
 
 	for(i = 0; i < settable_header_array->nelts; i++) {
 		header_names_size += ((header_pair_t*)settable_header_array->elts)[i].key.len + 1;
@@ -143,6 +144,19 @@ static inline const struct AwsCanonicalHeaderDetails ngx_aws_auth__canonize_head
 	}
 	retval.canon_header_str->len = used;
 	
+	/* make signed headers */
+	retval.signed_header_names = ngx_palloc(pool, sizeof(ngx_str_t));
+	retval.signed_header_names->data = ngx_palloc(pool, header_names_size);
+	
+	for(i = 0, used = 0, buf_progress = retval.signed_header_names->data; 
+		i < settable_header_array->nelts;
+		i++, used = buf_progress - retval.signed_header_names->data) {
+		buf_progress = ngx_snprintf(buf_progress, header_names_size - used, "%V;",
+			& ((header_pair_t*)settable_header_array->elts)[i].key);
+	}
+	used--;
+	retval.signed_header_names->len = used;
+	retval.signed_header_names->data[used] = 0;
 
 	return retval;
 }

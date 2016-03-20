@@ -97,6 +97,20 @@ static void canon_header_string(void **state) {
         "host:bugait.s3.amazonaws.com\nx-amz-content-sha256:f0e4c2f76c58916ec258f246851bea091d14d4247a2fc3e18694461b1816e13b\nx-amz-date:20160221T063112Z\n");
 }
 
+static void signed_headers(void **state) {
+    (void) state; /* unused */
+
+    ngx_str_t bucket, date, hash;
+    struct AwsCanonicalHeaderDetails retval;
+
+    bucket.data = "bugait"; bucket.len = 6;
+    date.data = "20160221T063112Z"; date.len = 16;
+    hash.data = "f0e4c2f76c58916ec258f246851bea091d14d4247a2fc3e18694461b1816e13b"; hash.len = 64;
+
+    retval = ngx_aws_auth__canonize_headers(pool, NULL, &bucket, &date, &hash);
+    assert_string_equal(retval.signed_header_names->data, "host;x-amz-content-sha256;x-amz-date");
+}
+
 
 int main() {
     const struct CMUnitTest tests[] = {
@@ -106,6 +120,7 @@ int main() {
         cmocka_unit_test(hmac_sha256),
         cmocka_unit_test(sha256),
         cmocka_unit_test(canon_header_string),
+        cmocka_unit_test(signed_headers),
     };
 
 	pool = ngx_create_pool(1000000, NULL);
