@@ -1,8 +1,8 @@
 CC=gcc
-CFLAGS=-I${NGX_PATH}/src/os/unix -I${NGX_PATH}/src/core -I${NGX_PATH}/src/http -I${NGX_PATH}/src/http/modules -I${NGX_PATH}/src/event -I${NGX_PATH}/objs/ -I. -W -Wall -Wpointer-arith -Wno-unused-parameter -Werror
+CFLAGS=-I${NGX_PATH}/src/os/unix -I${NGX_PATH}/src/core -I${NGX_PATH}/src/http -I${NGX_PATH}/src/http/modules -I${NGX_PATH}/src/event -I${NGX_PATH}/objs/ -I. -W -Wall -Wpointer-arith -Wno-unused-parameter
 
 
-all: crypto_helper_openssl.o
+all:
 
 %.o: %.c
 	$(CC) -c -o $@ $< $(CFLAGS)
@@ -12,7 +12,8 @@ all: crypto_helper_openssl.o
 
 NGX_OBJS := $(shell find ${NGX_PATH}/objs -name \*.o)
 
-test: crypto_helper_openssl.o
+test:
+	cd ${NGX_PATH} && rm -rf ${NGX_PATH}/objs/src/core/nginx.o && make
 	strip -N main -o ${NGX_PATH}/objs/src/core/nginx_without_main.o ${NGX_PATH}/objs/src/core/nginx.o
 	mv ${NGX_PATH}/objs/src/core/nginx_without_main.o ${NGX_PATH}/objs/src/core/nginx.o
 	$(CC) test_suite.c $(CFLAGS) -o test_suite -lcmocka ${NGX_OBJS} -ldl -lpthread -lcrypt -lpcre -lcrypto -lcrypto -lz $<

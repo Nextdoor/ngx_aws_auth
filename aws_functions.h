@@ -59,12 +59,15 @@ static const ngx_str_t AMZ_HASH_HEADER = ngx_string("x-amz-content-sha256");
 static const ngx_str_t AMZ_DATE_HEADER = ngx_string("x-amz-date");
 static const ngx_str_t HOST_HEADER = ngx_string("host");
 
+static inline char* __CHAR_PTR_U(u_char* ptr) {return (char*)ptr;}
+static inline const char* __CONST_CHAR_PTR_U(const u_char* ptr) {return (const char*)ptr;}
+
 static inline const ngx_str_t* ngx_aws_auth__compute_request_time(ngx_pool_t *pool, const time_t *timep) {
 	ngx_str_t *const retval = ngx_palloc(pool, sizeof(ngx_str_t));
 	retval->data = ngx_palloc(pool, AMZ_DATE_MAX_LEN);
 	struct tm *tm_p = ngx_palloc(pool, sizeof(struct tm));
 	gmtime_r(timep, tm_p);
-	retval->len = strftime(retval->data, AMZ_DATE_MAX_LEN - 1, "%Y%m%dT%H%M%SZ", tm_p);
+	retval->len = strftime(__CHAR_PTR_U(retval->data), AMZ_DATE_MAX_LEN - 1, "%Y%m%dT%H%M%SZ", tm_p);
 	return retval;
 }
 
@@ -84,12 +87,12 @@ static inline const ngx_str_t* ngx_aws_auth__host_from_bucket(ngx_pool_t *pool,
 	host->len = s3_bucket->len + sizeof(HOST_PATTERN) + 1;
 	host->data = ngx_palloc(pool, host->len);
 	ngx_snprintf(host->data, host->len, "%V%s", s3_bucket, HOST_PATTERN);
-	host->len = strnlen(host->data, host->len);
+	host->len = strnlen(__CONST_CHAR_PTR_U(host->data), host->len);
 
 	return host;
 }
 
-static inline  ngx_aws_auth__cmp_hnames(const void *one, const void *two) {
+static inline int ngx_aws_auth__cmp_hnames(const void *one, const void *two) {
     header_pair_t *first, *second;
     int ret;
     first  = (header_pair_t *) one;
@@ -110,8 +113,6 @@ static inline const struct AwsCanonicalHeaderDetails ngx_aws_auth__canonize_head
 	size_t i, used;
 	u_char *buf_progress;
 	struct AwsCanonicalHeaderDetails retval;
-
-	const ngx_str_t *host = ngx_aws_auth__host_from_bucket(pool, s3_bucket);
 
 	ngx_array_t *settable_header_array = ngx_array_create(pool, 3, sizeof(header_pair_t));
 	header_pair_t *header_ptr;
@@ -205,7 +206,7 @@ static inline const struct AwsCanonicalRequestDetails ngx_aws_auth__make_canonic
 	ngx_snprintf(retval.canon_request->data, retval.canon_request->len, "%V\n%V\n%V\n%V\n%V\n%V",
 		http_method, url, canon_qs, canon_headers.canon_header_str,
 		canon_headers.signed_header_names, request_body_hash);
-	retval.canon_request->len = strnlen(retval.canon_request->data, retval.canon_request->len);
+	retval.canon_request->len = strnlen(__CONST_CHAR_PTR_U(retval.canon_request->data), retval.canon_request->len);
 	retval.header_list = canon_headers.header_list;
 
 	return retval;
@@ -219,7 +220,7 @@ static inline const ngx_str_t* ngx_aws_auth__string_to_sign(ngx_pool_t *pool,
 	retval->len = STRING_TO_SIGN_LENGTH;
 	ngx_snprintf(retval->data, retval->len, "AWS4-HMAC-SHA256\n%V\n%V\n%V",
 		date, key_scope, canon_request_hash);
-	retval->len = strnlen(retval->data, retval->len);
+	retval->len = strnlen(__CONST_CHAR_PTR_U(retval->data), retval->len);
 
 	return retval;
 }
@@ -237,7 +238,7 @@ static inline const ngx_str_t* ngx_aws_auth__make_auth_token(ngx_pool_t *pool,
 	authz->data = ngx_palloc(pool, authz->len);
     ngx_snprintf(authz->data, authz->len, FMT_STRING,
 		access_key_id, key_scope, signed_header_names, signature);
-	authz->len = strnlen(authz->data, authz->len);
+	authz->len = strnlen(__CONST_CHAR_PTR_U(authz->data), authz->len);
 	return authz;
 }
 
@@ -264,7 +265,7 @@ static inline const struct AwsSignedRequestDetails ngx_aws_auth__compute_signatu
 	return retval;
 }
 
-static inline void ngx_aws_auth__sign(ngx_pool_t *pool, ngx_http_request_t *req,
+static inline const ngx_str_t* ngx_aws_auth__sign(ngx_pool_t *pool, ngx_http_request_t *req,
 		const ngx_str_t *access_key_id,
 		const ngx_str_t *signing_key,
 		const ngx_str_t *key_scope,
@@ -277,6 +278,7 @@ static inline void ngx_aws_auth__sign(ngx_pool_t *pool, ngx_http_request_t *req,
 
 
 	// TODO: attach auth header to outbound response
+	return auth_header_value;
 }
 
 #endif
