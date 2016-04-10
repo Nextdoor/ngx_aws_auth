@@ -15,12 +15,12 @@ Implements proxying of authenticated requests to S3.
   server {
     listen     8000;
 
+    aws_access_key your_aws_access_key;
+    aws_key_scope scope_of_generated_signing_key;
+    aws_signing_key signing_key_generated_using_script;
     location / {
+	  aws_sign;
       proxy_pass http://your_s3_bucket.s3.amazonaws.com;
-
-      aws_access_key your_aws_access_key;
-      aws_key_scope scope_of_generated_signing_key;
-      aws_signing_key signing_key_generated_using_script;
     }
 
     # This is an example that does not use the server root for the proxy root
