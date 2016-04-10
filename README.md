@@ -52,6 +52,30 @@ keys to your nginx clusters. Do not forget to HUP the server after placing the n
 signing key as nginx reads the configuration only at startup time.
 
 A standalone python script has been provided to generate the signing key
+```
+./generate_signing_key -h
+usage: generate_signing_key [-h] -k ACCESS_KEY -r REGION [-s SERVICE]
+                            [-d DATE] [--no-base64] [-v]
+
+Generate AWS S3 signing key in it's base64 encoded form
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -k ACCESS_KEY, --access-key ACCESS_KEY
+                        The secret access key generated using AWS IAM
+  -r REGION, --region REGION
+                        The AWS region where this key would be used. Example:
+                        us-east-1
+  -s SERVICE, --service SERVICE
+                        The AWS service for which this key would be used.
+                        Example: s3
+  -d DATE, --date DATE  The date on which this key is generated in yyyymmdd
+                        format
+  --no-base64           Disable output as a base64 encoded string. This NOT
+                        recommended
+  -v, --verbose         Produce verbose output on stderr
+
+```
 
 ## Known limitations
 The 2.x version of the module currently only has support for GET and HEAD calls. This is because
