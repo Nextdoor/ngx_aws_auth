@@ -107,7 +107,10 @@ ngx_http_aws_auth_merge_loc_conf(ngx_conf_t *cf, void *parent, void *child)
 static ngx_int_t
 ngx_http_aws_proxy_sign(ngx_http_request_t *r)
 {
-    return 0;
+    /* TODO: sign and add headers in here.
+       See ngx_http_add_header in ngx_http_headers_filter_module.c
+    */
+    return NGX_OK;
 }
 
 static char *
