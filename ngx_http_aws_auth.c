@@ -1,6 +1,7 @@
 #include <ngx_config.h>
 #include <ngx_core.h>
 #include <ngx_http.h>
+#include "aws_functions.h"
 
 #define AWS_S3_VARIABLE "s3_auth_token"
 #define AWS_DATE_VARIABLE "aws_date"
@@ -107,9 +108,24 @@ ngx_http_aws_auth_merge_loc_conf(ngx_conf_t *cf, void *parent, void *child)
 static ngx_int_t
 ngx_http_aws_proxy_sign(ngx_http_request_t *r)
 {
-    /* TODO: sign and add headers in here.
-       See ngx_http_add_header in ngx_http_headers_filter_module.c
-    */
+    ngx_table_elt_t  *h;
+    header_pair_t *hv;
+    const ngx_array_t* headers_out = ngx_aws_auth__sign(r->pool, r, NULL, NULL, NULL, NULL); // TODO: config values
+    ngx_uint_t i;
+
+    for(i = 0; i < headers_out->nelts; i++)
+    {
+        h = ngx_list_push(&r->headers_out.headers);
+        if (h == NULL) {
+            return NGX_ERROR;
+        }
+        hv = (header_pair_t*)((u_char *) headers_out->elts + headers_out->size * i);
+
+        h->hash = 1;
+        h->key = hv->key;
+        h->value = hv->value;
+    }
+
     return NGX_OK;
 }
 

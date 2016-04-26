@@ -18,7 +18,7 @@ nginx:
 test: | nginx
 	strip -N main -o ${NGX_PATH}/objs/src/core/nginx_without_main.o ${NGX_PATH}/objs/src/core/nginx.o
 	mv ${NGX_PATH}/objs/src/core/nginx_without_main.o ${NGX_PATH}/objs/src/core/nginx.o
-	$(CC) test_suite.c $(CFLAGS) -o test_suite -lcmocka ${NGX_OBJS} -ldl -lpthread -lcrypt -lpcre -lcrypto -lcrypto -lz $<
+	$(CC) test_suite.c $(CFLAGS) -o test_suite -lcmocka ${NGX_OBJS} -ldl -lpthread -lcrypt -lpcre -lcrypto -lz  $<
 	./test_suite
 
 clean:

@@ -58,6 +58,7 @@ static const ngx_str_t EMPTY_STRING = ngx_null_string;
 static const ngx_str_t AMZ_HASH_HEADER = ngx_string("x-amz-content-sha256");
 static const ngx_str_t AMZ_DATE_HEADER = ngx_string("x-amz-date");
 static const ngx_str_t HOST_HEADER = ngx_string("host");
+static const ngx_str_t AUTHZ_HEADER = ngx_string("authorization");
 
 static inline char* __CHAR_PTR_U(u_char* ptr) {return (char*)ptr;}
 static inline const char* __CONST_CHAR_PTR_U(const u_char* ptr) {return (const char*)ptr;}
@@ -265,7 +266,9 @@ static inline const struct AwsSignedRequestDetails ngx_aws_auth__compute_signatu
 	return retval;
 }
 
-static inline const ngx_str_t* ngx_aws_auth__sign(ngx_pool_t *pool, ngx_http_request_t *req,
+
+// list of header_pair_t
+static inline const ngx_array_t* ngx_aws_auth__sign(ngx_pool_t *pool, ngx_http_request_t *req,
 		const ngx_str_t *access_key_id,
 		const ngx_str_t *signing_key,
 		const ngx_str_t *key_scope,
@@ -276,9 +279,12 @@ static inline const ngx_str_t* ngx_aws_auth__sign(ngx_pool_t *pool, ngx_http_req
 	const ngx_str_t *auth_header_value = ngx_aws_auth__make_auth_token(pool, signature_details.signature,
 											signature_details.signed_header_names, access_key_id, key_scope);
 
+	header_pair_t *header_ptr;
+	header_ptr = ngx_array_push(signature_details.header_list);
+	header_ptr->key = AUTHZ_HEADER;
+	header_ptr->value = *auth_header_value;
 
-	// TODO: attach auth header to outbound response
-	return auth_header_value;
+	return signature_details.header_list;
 }
 
 #endif
