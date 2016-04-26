@@ -106,7 +106,7 @@ static inline int ngx_aws_auth__cmp_hnames(const void *one, const void *two) {
     }
 }
 
-static inline const struct AwsCanonicalHeaderDetails ngx_aws_auth__canonize_headers(ngx_pool_t *pool,
+static inline struct AwsCanonicalHeaderDetails ngx_aws_auth__canonize_headers(ngx_pool_t *pool,
 		const ngx_http_request_t *req,
 		const ngx_str_t *s3_bucket, const ngx_str_t *amz_date,
 		const ngx_str_t *content_hash) {
@@ -182,7 +182,7 @@ static inline const ngx_str_t* ngx_aws_auth__canon_url(ngx_pool_t *pool, const n
 	return &req->uri; // TODO: handle cases involving either query string or encoded url path
 }
 
-static inline const struct AwsCanonicalRequestDetails ngx_aws_auth__make_canonical_request(ngx_pool_t *pool,
+static inline struct AwsCanonicalRequestDetails ngx_aws_auth__make_canonical_request(ngx_pool_t *pool,
 		const ngx_http_request_t *req,
 		const ngx_str_t *s3_bucket_name, const ngx_str_t *amz_date) {
 	struct AwsCanonicalRequestDetails retval;
@@ -243,7 +243,7 @@ static inline const ngx_str_t* ngx_aws_auth__make_auth_token(ngx_pool_t *pool,
 	return authz;
 }
 
-static inline const struct AwsSignedRequestDetails ngx_aws_auth__compute_signature(ngx_pool_t *pool, ngx_http_request_t *req,
+static inline struct AwsSignedRequestDetails ngx_aws_auth__compute_signature(ngx_pool_t *pool, ngx_http_request_t *req,
 		const ngx_str_t *signing_key,
 		const ngx_str_t *key_scope,
 		const ngx_str_t *s3_bucket_name) {
