@@ -11,7 +11,6 @@ static char* ngx_http_aws_auth_merge_loc_conf(ngx_conf_t *cf, void *parent, void
 static ngx_int_t ngx_aws_auth_req_init(ngx_conf_t *cf);
 static char* ngx_http_aws_sign(ngx_conf_t *cf, ngx_command_t *cmd, void *conf);
 
-
 typedef struct {
     ngx_str_t access_key;
     ngx_str_t key_scope;
@@ -42,7 +41,14 @@ static ngx_command_t  ngx_http_aws_auth_commands[] = {
       NGX_HTTP_LOC_CONF_OFFSET,
       offsetof(ngx_http_aws_auth_conf_t, signing_key),
       NULL },
-  
+
+    { ngx_string("aws_s3_bucket"),
+      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_CONF_TAKE1,
+      ngx_conf_set_str_slot,
+      NGX_HTTP_LOC_CONF_OFFSET,
+      offsetof(ngx_http_aws_auth_conf_t, bucket_name),
+      NULL },
+
     { ngx_string("aws_sign"),
       NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_CONF_NOARGS,
       ngx_http_aws_sign,
@@ -105,6 +111,7 @@ ngx_http_aws_auth_merge_loc_conf(ngx_conf_t *cf, void *parent, void *child)
     ngx_conf_merge_str_value(conf->access_key, prev->access_key, "");
     ngx_conf_merge_str_value(conf->key_scope, prev->key_scope, "");
     ngx_conf_merge_str_value(conf->signing_key, prev->signing_key, "");
+    ngx_conf_merge_str_value(conf->bucket_name, prev->bucket_name, "");
 
     if(conf->signing_key_decoded.data == NULL)
     {
@@ -120,11 +127,6 @@ ngx_http_aws_auth_merge_loc_conf(ngx_conf_t *cf, void *parent, void *child)
     } else {
         ngx_decode_base64(&conf->signing_key_decoded, &conf->signing_key);
     }
-
-    conf->bucket_name.data = NULL; // TODO: real value
-    conf->bucket_name.len = 0; // TODO: real value
-
-    conf->bucket_name = BUCKET_HARDCODE;
 
     return NGX_CONF_OK;
 }
