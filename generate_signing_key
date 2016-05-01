@@ -20,7 +20,7 @@ def getSignatureKey(key, dateStamp, regionName, serviceName):
 
 def cmdline_parser():
     parser = argparse.ArgumentParser(description="Generate AWS S3 signing key in it's base64 encoded form")
-    parser.add_argument("-k", "--access-key", required=True, help='The secret access key generated using AWS IAM')
+    parser.add_argument("-k", "--secret-key", required=True, help='The secret key generated using AWS IAM. Do not confuse this with the access key id')
     parser.add_argument("-r", "--region", required=True, help='The AWS region where this key would be used. Example: us-east-1')
     parser.add_argument("-s", "--service", help='The AWS service for which this key would be used. Example: s3')
     parser.add_argument("-d", "--date", help='The date on which this key is generated in yyyymmdd format')
