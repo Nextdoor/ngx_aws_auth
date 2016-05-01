@@ -153,13 +153,14 @@ ngx_http_aws_proxy_sign(ngx_http_request_t *r)
         ngx_log_error(NGX_LOG_ERR, r->connection->log, 0, 
                 "header name %s, value %s", hv->key.data, hv->value.data);
         
-        h = ngx_list_push(&r->headers_out.headers);
+        h = ngx_list_push(&r->headers_in.headers);
         if (h == NULL) {
             return NGX_ERROR;
         }
 
         h->hash = 1;
         h->key = hv->key;
+        h->lowcase_key = hv->key.data; // TODO: enforce lower case
         h->value = hv->value;
     }
 
