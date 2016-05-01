@@ -17,6 +17,7 @@ typedef struct {
     ngx_str_t signing_key;
     ngx_str_t signing_key_decoded;
     ngx_str_t bucket_name;
+    ngx_uint_t enabled;
 } ngx_http_aws_auth_conf_t;
 
 
@@ -95,6 +96,7 @@ ngx_http_aws_auth_create_loc_conf(ngx_conf_t *cf)
     ngx_http_aws_auth_conf_t  *conf;
 
     conf = ngx_pcalloc(cf->pool, sizeof(ngx_http_aws_auth_conf_t));
+    conf->enabled = 0;
     if (conf == NULL) {
         return NGX_CONF_ERROR;
     }
@@ -135,33 +137,35 @@ static ngx_int_t
 ngx_http_aws_proxy_sign(ngx_http_request_t *r)
 {
     ngx_http_aws_auth_conf_t *conf = ngx_http_get_module_loc_conf(r, ngx_http_aws_auth_module);
-    ngx_table_elt_t  *h;
-    header_pair_t *hv;
+    if(conf->enabled) {
+        ngx_table_elt_t  *h;
+        header_pair_t *hv;
 
-    ngx_log_error(NGX_LOG_ERR, r->connection->log, 0, 
-            "About to generate signature");
+        ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
+                "About to generate signature");
 
-    const ngx_array_t* headers_out = ngx_aws_auth__sign(r->pool, r, 
-        &conf->access_key, &conf->signing_key_decoded, &conf->key_scope, &conf->bucket_name);
-    ngx_log_error(NGX_LOG_ERR, r->connection->log, 0, 
-            "Got signature");
-    
-    ngx_uint_t i;
-    for(i = 0; i < headers_out->nelts; i++)
-    {
-        hv = (header_pair_t*)((u_char *) headers_out->elts + headers_out->size * i);
-        ngx_log_error(NGX_LOG_ERR, r->connection->log, 0, 
-                "header name %s, value %s", hv->key.data, hv->value.data);
-        
-        h = ngx_list_push(&r->headers_in.headers);
-        if (h == NULL) {
-            return NGX_ERROR;
+        const ngx_array_t* headers_out = ngx_aws_auth__sign(r->pool, r,
+            &conf->access_key, &conf->signing_key_decoded, &conf->key_scope, &conf->bucket_name);
+        ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
+                "Got signature");
+
+        ngx_uint_t i;
+        for(i = 0; i < headers_out->nelts; i++)
+        {
+            hv = (header_pair_t*)((u_char *) headers_out->elts + headers_out->size * i);
+            ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
+                    "header name %s, value %s", hv->key.data, hv->value.data);
+
+            h = ngx_list_push(&r->headers_in.headers);
+            if (h == NULL) {
+                return NGX_ERROR;
+            }
+
+            h->hash = 1;
+            h->key = hv->key;
+            h->lowcase_key = hv->key.data; // TODO: enforce lower case
+            h->value = hv->value;
         }
-
-        h->hash = 1;
-        h->key = hv->key;
-        h->lowcase_key = hv->key.data; // TODO: enforce lower case
-        h->value = hv->value;
     }
 
     return NGX_OK;
@@ -170,8 +174,14 @@ ngx_http_aws_proxy_sign(ngx_http_request_t *r)
 static char *
 ngx_http_aws_sign(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
-    //ngx_http_aws_auth_conf_t  *module_conf = conf;
-    //clcf->handler = ngx_http_aws_proxy_sign;
+    /*
+    ngx_http_core_loc_conf_t  *clcf;
+
+    clcf = ngx_http_conf_get_module_loc_conf(cf, ngx_http_core_module);
+    clcf->handler = ngx_http_aws_proxy_sign;
+    */
+    ngx_http_aws_auth_conf_t *mconf = ngx_http_conf_get_module_loc_conf(cf, ngx_http_aws_auth_module);
+    mconf->enabled = 1;
 
     return NGX_CONF_OK;
 }
@@ -184,7 +194,7 @@ ngx_aws_auth_req_init(ngx_conf_t *cf)
 
     cmcf = ngx_http_conf_get_module_main_conf(cf, ngx_http_core_module);
 
-    h = ngx_array_push(&cmcf->phases[NGX_HTTP_PREACCESS_PHASE].handlers);
+    h = ngx_array_push(&cmcf->phases[NGX_HTTP_ACCESS_PHASE].handlers);
     if (h == NULL) {
         return NGX_ERROR;
     }
