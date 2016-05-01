@@ -18,6 +18,8 @@ Implements proxying of authenticated requests to S3.
     aws_access_key your_aws_access_key;
     aws_key_scope scope_of_generated_signing_key;
     aws_signing_key signing_key_generated_using_script;
+	aws_s3_bucket your_s3_bucket;
+
     location / {
 	  aws_sign;
       proxy_pass http://your_s3_bucket.s3.amazonaws.com;
