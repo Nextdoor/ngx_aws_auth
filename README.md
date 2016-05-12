@@ -2,7 +2,7 @@
 
 This nginx module can proxy requests to authenticated S3 backends using Amazon's
 V4 authentication API. The first version of this module was written for the V2
-authentication protocol and can be found in the 1.x branch.
+authentication protocol and can be found in the *AuthV2* branch.
 
 ## License
 This project uses the same license as ngnix does i.e. the 2 clause BSD / simplified BSD / FreeBSD license
