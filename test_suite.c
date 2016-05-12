@@ -7,6 +7,11 @@
 
 ngx_pool_t *pool;
 
+static void assert_ngx_string_equal(ngx_str_t a, ngx_str_t b) {
+	int len = a.len < b.len ?  a.len : b.len;
+    assert_memory_equal(a.data, b.data, len);
+}
+
 static void null_test_success(void **state) {
     (void) state; /* unused */
 }
@@ -111,6 +116,83 @@ static void signed_headers(void **state) {
     assert_string_equal(retval.signed_header_names->data, "host;x-amz-content-sha256;x-amz-date");
 }
 
+static void canonical_qs_empty(void **state) {
+    (void) state; /* unused */
+	ngx_http_request_t request;
+	request.args = EMPTY_STRING;
+
+	const ngx_str_t *canon_qs = ngx_aws_auth__canonize_query_string(pool, &request);
+    assert_ngx_string_equal(*canon_qs, EMPTY_STRING);
+}
+
+static void canonical_qs_single_arg(void **state) {
+    (void) state; /* unused */
+	ngx_http_request_t request;
+	ngx_str_t args = ngx_string("arg1=val1");
+	request.args = args;
+
+	const ngx_str_t *canon_qs = ngx_aws_auth__canonize_query_string(pool, &request);
+    assert_ngx_string_equal(*canon_qs, args);
+}
+
+static void canonical_qs_two_arg_reverse(void **state) {
+    (void) state; /* unused */
+	ngx_http_request_t request;
+	ngx_str_t args = ngx_string("brg1=val2&arg1=val1");
+	ngx_str_t cargs = ngx_string("arg1=val1&brg1=val");
+	request.args = args;
+
+	const ngx_str_t *canon_qs = ngx_aws_auth__canonize_query_string(pool, &request);
+    assert_ngx_string_equal(*canon_qs, cargs);
+}
+
+static void canonical_qs_subrequest(void **state) {
+    (void) state; /* unused */
+	ngx_http_request_t request;
+	ngx_str_t args = ngx_string("acl");
+	ngx_str_t cargs = ngx_string("acl=");
+	request.args = args;
+
+	const ngx_str_t *canon_qs = ngx_aws_auth__canonize_query_string(pool, &request);
+    assert_ngx_string_equal(*canon_qs, cargs);
+}
+
+static void canonical_url_sans_qs(void **state) {
+    (void) state; /* unused */
+
+	ngx_http_request_t request;
+	ngx_str_t url = ngx_string("foo.php");
+	request.uri = url;
+	request.uri_start = request.uri.data;
+	request.args_start = url.data + url.len;
+	request.args = EMPTY_STRING;
+
+	const ngx_str_t *canon_url = ngx_aws_auth__canon_url(pool, &request);
+    assert_int_equal(canon_url->len, url.len);
+    assert_ngx_string_equal(*canon_url, url);
+}
+
+static void canonical_url_with_qs(void **state) {
+    (void) state; /* unused */
+
+	ngx_http_request_t request;
+	ngx_str_t url = ngx_string("foo.php?arg1=var1");
+	ngx_str_t curl = ngx_string("foo.php");
+
+	ngx_str_t args;
+	args.data = url.data+8;
+	args.len =9;
+
+	request.uri = url;
+	request.uri_start = request.uri.data;
+	request.args_start = url.data + 8;
+	request.args = args;
+
+	const ngx_str_t *canon_url = ngx_aws_auth__canon_url(pool, &request);
+    assert_int_equal(canon_url->len, curl.len);
+    assert_ngx_string_equal(*canon_url, curl);
+}
+
 static void canonical_request_sans_qs(void **state) {
     (void) state; /* unused */
 	const ngx_str_t bucket = ngx_string("example");
@@ -123,6 +205,7 @@ static void canonical_request_sans_qs(void **state) {
 
 	request.uri = url;
 	request.method_name = method;
+	request.args = EMPTY_STRING;
 
 	result = ngx_aws_auth__make_canonical_request(pool, &request, &bucket, &aws_date);
 	assert_string_equal(result.canon_request->data, "GET\n\
@@ -150,6 +233,7 @@ static void basic_get_signature(void **state) {
 	request.start_sec = 1440938160; /* 20150830T123600Z */
 	request.uri = url;
 	request.method_name = method;
+	request.args = EMPTY_STRING;
 
 	signing_key.len = 64;
 	signing_key.data = ngx_palloc(pool, signing_key.len );
@@ -169,6 +253,12 @@ int main() {
         cmocka_unit_test(hmac_sha256),
         cmocka_unit_test(sha256),
         cmocka_unit_test(canon_header_string),
+        cmocka_unit_test(canonical_qs_empty),
+        cmocka_unit_test(canonical_qs_single_arg),
+        cmocka_unit_test(canonical_qs_two_arg_reverse),
+        cmocka_unit_test(canonical_qs_subrequest),
+        cmocka_unit_test(canonical_url_sans_qs),
+        cmocka_unit_test(canonical_url_with_qs),
         cmocka_unit_test(signed_headers),
         cmocka_unit_test(canonical_request_sans_qs),
         cmocka_unit_test(basic_get_signature),

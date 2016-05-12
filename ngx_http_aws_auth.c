@@ -141,20 +141,26 @@ ngx_http_aws_proxy_sign(ngx_http_request_t *r)
         ngx_table_elt_t  *h;
         header_pair_t *hv;
 
-        ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-                "About to generate signature");
+        if (!(r->method & (NGX_HTTP_GET|NGX_HTTP_HEAD))) {
+            /* We do not wish to support anything with a body as signing for a body is unimplemented */
+            return NGX_HTTP_NOT_ALLOWED;
+        }
 
         const ngx_array_t* headers_out = ngx_aws_auth__sign(r->pool, r,
             &conf->access_key, &conf->signing_key_decoded, &conf->key_scope, &conf->bucket_name);
-        ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-                "Got signature");
 
         ngx_uint_t i;
         for(i = 0; i < headers_out->nelts; i++)
         {
             hv = (header_pair_t*)((u_char *) headers_out->elts + headers_out->size * i);
-            ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
+            ngx_log_debug2(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                     "header name %s, value %s", hv->key.data, hv->value.data);
+
+            if(ngx_strncmp(hv->key.data, HOST_HEADER.data, hv->key.len) == 0) {
+                /* host header is controlled by proxy pass directive and hence
+                   cannot be set by our module */
+                continue;
+            }
 
             h = ngx_list_push(&r->headers_in.headers);
             if (h == NULL) {
@@ -163,7 +169,7 @@ ngx_http_aws_proxy_sign(ngx_http_request_t *r)
 
             h->hash = 1;
             h->key = hv->key;
-            h->lowcase_key = hv->key.data; // TODO: enforce lower case
+            h->lowcase_key = hv->key.data; /* We ensure that header names are already lowercased */
             h->value = hv->value;
         }
     }
