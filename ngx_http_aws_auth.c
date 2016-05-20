@@ -538,20 +538,9 @@ ngx_http_aws_auth_variable_s3(ngx_http_request_t *r, ngx_http_variable_value_t *
         lenall += el_sign->len;
     }
     ngx_http_aws_auth_sgn_newline(to_sign);
-    ngx_str_t h_date = ngx_string("http_date");
-    if (ngx_http_variable_unknown_header(val, &h_date, &r->headers_in.headers.part, sizeof("http_")-1) == NGX_OK) {
-        if (val->not_found == 0) {
-            ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "Date: %s", val->data);
-            el_sign = ngx_array_push(to_sign);
-            if (el_sign == NULL) {
-                return NGX_ERROR;
-            }
-            el_sign->data = val->data;
-            el_sign->len  = val->len;
-            lenall += el_sign->len;
-        }
-    }
 
+    // Because we're using x-amz-date, omit adding value of Date header
+    // into the string to be signed.
     ngx_http_aws_auth_sgn_newline(to_sign);
 
     el_sign = ngx_array_push(to_sign);
